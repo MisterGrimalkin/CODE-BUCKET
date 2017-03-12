@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Bee Test</title>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
 </head>
 
 <body style="text-align: center">
@@ -18,44 +18,61 @@
 
 <script>
 
-    $("#garden").mousemove(function (event) {
-        flowerOn = true;
-        mouse.x = event.clientX;
-        mouse.y = event.clientY;
-        buzzBees();
-    }).mouseout(function (event) {
-        flowerOn = false;
-        waggleDance = false;
-        jitter = true;
-        restBees();
-    }).mousedown(function () {
-        waggleDance = true;
-        jitter = false;
-        buzzBees();
-    }).mouseup(function () {
-        waggleDance = false;
-        jitter = true;
-        buzzBees();
-    });
+    var mouse = {};
+
+    var bees = [];
+
+    var waggleRadius = 150;
+    var waggleSpeed = 20;
+    var waggleAngle = 0;
+    var dW = -0.03;
+
+    var threshold = 5;
+    var minOffset = 30;
+    var maxOffset = 110;
+    var minLinearSpeed = 40;
+    var maxLinearSpeed = 200;
+    var minAngularSpeed = 15;
+    var maxAngularSpeed = 80;
+
+    var waggleDance = false;
+    var flowerOn = false;
 
     $(function () {
-        bees[0] = new Bee(215, 795, -80, -70, 100, 15);
-        bees[1] = new Bee(430, 810, -10, -60, 200, 20);
-        bees[2] = new Bee(700, 830, 80, 0, 100, 30);
-        bees[3] = new Bee(1040, 780, 20, 90, 40, 80);
-        bees[4] = new Bee(1240, 820, -95, 70, 50, 50);
+        bees[0] = new Bee(215, 795);
+        bees[1] = new Bee(430, 810);
+        bees[2] = new Bee(700, 830);
+        bees[3] = new Bee(1040, 780);
+        bees[4] = new Bee(1240, 820);
         setInterval(function () {
             updateBees();
             refresh();
         }, 10);
     });
 
-    var threshold = 10;
-    var waggleDance = false;
-    var jitter = true;
-    var bees = [];
-    var mouse = {};
-    var flowerOn = false;
+    $("#garden").mousemove(function (event) {
+        storeMouse(event);
+        flowerOn = true;
+        buzzBees();
+    }).mouseout(function () {
+        flowerOn = false;
+        waggleDance = false;
+        randomizeBees();
+        restBees();
+    }).mousedown(function () {
+        waggleDance = true;
+        buzzBees();
+    }).mouseup(function () {
+        waggleDance = false;
+        randomizeBees();
+        buzzBees();
+    });
+
+    function storeMouse(event) {
+        var offset = $("#garden").offset();
+        mouse.x = event.pageX - offset.left;
+        mouse.y = event.pageY - offset.top;
+    }
 
     function refresh() {
         var c = document.getElementById("garden");
@@ -63,41 +80,32 @@
         ctx.clearRect(0, 0, 1500, 900);
 
         if (flowerOn) {
-            ctx.drawImage(document.getElementById("flower"), mouse.x - 120, mouse.y - 50);
+            ctx.drawImage(document.getElementById("flower"), mouse.x - 50, mouse.y - 50);
         }
 
         for (var i = 0; i < bees.length; i++) {
             var img = bees[i].targetX > bees[i].x ? "bee-right" : "bee-left";
             ctx.drawImage(document.getElementById(img), bees[i].x - 25, bees[i].y - 20);
         }
-        if ( waggleDance ) {
-            waggle += dWaggle;
-            if (waggle > (2 * Math.PI)) {
-                waggle = 0;
+
+        if (waggleDance) {
+            waggleAngle += dW;
+            if (waggleAngle > (2 * Math.PI)) {
+                waggleAngle = 0;
             }
             buzzBees();
         }
     }
 
-    function updateBees() {
-        for (var i = 0; i < bees.length; i++) {
-            bees[i].updatePosition();
-        }
-    }
-
-    var waggle = 0;
-    var dWaggle = -0.03;
-    var waggleRadius = 150;
-
     function buzzBees() {
         for (var i = 0; i < bees.length; i++) {
             if (waggleDance) {
-                var angle = (((2*Math.PI)/bees.length)*i) + waggle;
-                var x = (mouse.x - 80) + (Math.sin(angle) * waggleRadius);
+                var angle = (((2 * Math.PI) / bees.length) * i) + waggleAngle;
+                var x = (mouse.x) + (Math.sin(angle) * waggleRadius);
                 var y = (mouse.y) + (Math.cos(angle) * waggleRadius);
                 bees[i].buzzTo(x, y, false);
             } else {
-                bees[i].buzzTo(mouse.x - 40, mouse.y, true);
+                bees[i].buzzTo(mouse.x, mouse.y, true);
             }
         }
     }
@@ -108,21 +116,35 @@
         }
     }
 
-    function Bee(x, y, offX, offY, linearSpeed, angularSpeed) {
-        this.x = this.currentX = this.restX = this.targetX = x;
-        this.y = this.currentY = this.restY = this.targetY = y;
-        this.offsetX = offX;
-        this.offsetY = offY;
-        this.linearSpeed = linearSpeed;
-        this.dX = this.dY = 0;
-        this.radius = 0;
-        this.theta = 0;
-        this.dT = 1 / angularSpeed;
+    function updateBees() {
+        for (var i = 0; i < bees.length; i++) {
+            bees[i].updatePosition();
+        }
     }
 
-    Bee.prototype.buzzTo = function (x, y, useOffset) {
-        this.targetX = x + ( useOffset ? this.offsetX : 0 );
-        this.targetY = y + ( useOffset ? this.offsetY : 0 );
+    function randomizeBees() {
+        for (var i = 0; i < bees.length; i++) {
+            bees[i].randomize();
+        }
+    }
+
+    function Bee(x, y) {
+        this.x = this.currentX = this.restX = this.targetX = x;
+        this.y = this.currentY = this.restY = this.targetY = y;
+        this.dX = this.dY = this.radius = this.theta = 0;
+        this.randomize();
+    }
+
+    Bee.prototype.randomize = function() {
+        this.offsetX = flip(minOffset, maxOffset);
+        this.offsetY = flip(minOffset, maxOffset);
+        this.linearSpeed = random(minLinearSpeed, maxLinearSpeed);
+        this.dT = 1 / random(minAngularSpeed, maxAngularSpeed);
+    };
+
+    Bee.prototype.buzzTo = function (x, y, offset) {
+        this.targetX = x + ( offset ? this.offsetX : 0 );
+        this.targetY = y + ( offset ? this.offsetY : 0 );
         this.updateDelta();
     };
 
@@ -133,7 +155,7 @@
     };
 
     Bee.prototype.updateDelta = function () {
-        var speed = waggleDance ? 20 : this.linearSpeed;
+        var speed = waggleDance ? waggleSpeed : this.linearSpeed;
         this.dX = (this.targetX - this.currentX) / speed;
         this.dY = (this.targetY - this.currentY) / speed;
     };
@@ -141,13 +163,17 @@
     Bee.prototype.updatePosition = function () {
         if (Math.abs(this.targetX - this.currentX) > threshold) {
             this.currentX += this.dX;
+        } else if (this.targetX == this.restX) {
+            this.currentX = this.targetX;
         }
         if (Math.abs(this.targetY - this.currentY) > threshold) {
             this.currentY += this.dY;
+        } else if (this.targetY == this.restY) {
+            this.currentY = this.targetY;
         }
-        this.x = this.currentX + ( jitter ? Math.sin(this.theta) * this.radius : 0 );
-        this.y = this.currentY + ( jitter ? Math.cos(this.theta) * this.radius : 0 );
-        if (jitter) {
+        this.x = this.currentX + ( waggleDance ? 0 : Math.sin(this.theta) * this.radius );
+        this.y = this.currentY + ( waggleDance ? 0 : Math.cos(this.theta) * this.radius );
+        if (!waggleDance) {
             this.radius = (Math.abs(this.currentX - this.restX) + Math.abs(this.currentY - this.restY)) / 40;
             if (this.radius > 3) {
                 this.theta += this.dT;
@@ -157,6 +183,14 @@
             }
         }
     };
+
+    function flip(min, max) {
+        return random(min, max) * (Math.random() >= 0.5 ? -1 : 1);
+    }
+
+    function random(min, max) {
+        return Math.floor(Math.random()*(max-min+1)+min);
+    }
 
 </script>
 
