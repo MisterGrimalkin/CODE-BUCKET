@@ -25,7 +25,17 @@
         buzzBees();
     }).mouseout(function (event) {
         flowerOn = false;
+        waggleDance = false;
+        jitter = true;
         restBees();
+    }).mousedown(function () {
+        waggleDance = true;
+        jitter = false;
+        buzzBees();
+    }).mouseup(function () {
+        waggleDance = false;
+        jitter = true;
+        buzzBees();
     });
 
     $(function () {
@@ -41,6 +51,7 @@
     });
 
     var threshold = 10;
+    var waggleDance = false;
     var jitter = true;
     var bees = [];
     var mouse = {};
@@ -59,6 +70,13 @@
             var img = bees[i].targetX > bees[i].x ? "bee-right" : "bee-left";
             ctx.drawImage(document.getElementById(img), bees[i].x - 25, bees[i].y - 20);
         }
+        if ( waggleDance ) {
+            waggle += dWaggle;
+            if (waggle > (2 * Math.PI)) {
+                waggle = 0;
+            }
+            buzzBees();
+        }
     }
 
     function updateBees() {
@@ -67,9 +85,20 @@
         }
     }
 
+    var waggle = 0;
+    var dWaggle = -0.03;
+    var waggleRadius = 150;
+
     function buzzBees() {
         for (var i = 0; i < bees.length; i++) {
-            bees[i].buzzTo(mouse.x - 40, mouse.y);
+            if (waggleDance) {
+                var angle = (((2*Math.PI)/bees.length)*i) + waggle;
+                var x = (mouse.x - 80) + (Math.sin(angle) * waggleRadius);
+                var y = (mouse.y) + (Math.cos(angle) * waggleRadius);
+                bees[i].buzzTo(x, y, false);
+            } else {
+                bees[i].buzzTo(mouse.x - 40, mouse.y, true);
+            }
         }
     }
 
@@ -91,9 +120,9 @@
         this.dT = 1 / angularSpeed;
     }
 
-    Bee.prototype.buzzTo = function (x, y) {
-        this.targetX = x + this.offsetX;
-        this.targetY = y + this.offsetY;
+    Bee.prototype.buzzTo = function (x, y, useOffset) {
+        this.targetX = x + ( useOffset ? this.offsetX : 0 );
+        this.targetY = y + ( useOffset ? this.offsetY : 0 );
         this.updateDelta();
     };
 
@@ -104,8 +133,9 @@
     };
 
     Bee.prototype.updateDelta = function () {
-        this.dX = (this.targetX - this.currentX) / this.linearSpeed;
-        this.dY = (this.targetY - this.currentY) / this.linearSpeed;
+        var speed = waggleDance ? 20 : this.linearSpeed;
+        this.dX = (this.targetX - this.currentX) / speed;
+        this.dY = (this.targetY - this.currentY) / speed;
     };
 
     Bee.prototype.updatePosition = function () {
@@ -117,7 +147,7 @@
         }
         this.x = this.currentX + ( jitter ? Math.sin(this.theta) * this.radius : 0 );
         this.y = this.currentY + ( jitter ? Math.cos(this.theta) * this.radius : 0 );
-        if ( jitter ) {
+        if (jitter) {
             this.radius = (Math.abs(this.currentX - this.restX) + Math.abs(this.currentY - this.restY)) / 40;
             if (this.radius > 3) {
                 this.theta += this.dT;
