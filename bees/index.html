@@ -25,7 +25,7 @@
     var waggleRadius = 150;
     var waggleSpeed = 20;
     var waggleAngle = 0;
-    var dW = -0.03;
+    var dW = 0.03;
 
     var threshold = 5;
     var minOffset = 30;
@@ -50,6 +50,11 @@
         }, 10);
     });
 
+    function addBee() {
+        bees.push(new Bee(Math.random() > 0.5 ? -100 : 1600, 0));
+        updateBees();
+    }
+
     $("#garden").mousemove(function (event) {
         storeMouse(event);
         flowerOn = true;
@@ -60,8 +65,7 @@
         randomizeBees();
         restBees();
     }).mousedown(function () {
-        waggleDance = true;
-        buzzBees();
+        beginWaggleDance();
     }).mouseup(function () {
         waggleDance = false;
         randomizeBees();
@@ -72,6 +76,15 @@
         var offset = $("#garden").offset();
         mouse.x = event.pageX - offset.left;
         mouse.y = event.pageY - offset.top;
+    }
+
+    var waggleDanceStartedAt = 0;
+
+    function beginWaggleDance() {
+        waggleDance = true;
+        waggleDanceStartedAt = new Date().getTime();
+        dW = -dW;
+        buzzBees();
     }
 
     function refresh() {
@@ -89,13 +102,24 @@
         }
 
         if (waggleDance) {
+            if ( new Date().getTime() - waggleDanceStartedAt > swarmDelay ) {
+                if ( bees.length < swarmThreshold ) {
+                    waggleDanceStartedAt = new Date().getTime();
+                }
+                addBee();
+            }
             waggleAngle += dW;
             if (waggleAngle > (2 * Math.PI)) {
                 waggleAngle = 0;
+            } else if ( waggleAngle < 0 ) {
+                waggleAngle = 2 * Math.PI;
             }
             buzzBees();
         }
     }
+
+    var swarmDelay = 5000;
+    var swarmThreshold = 12;
 
     function buzzBees() {
         for (var i = 0; i < bees.length; i++) {
@@ -136,8 +160,10 @@
     }
 
     Bee.prototype.randomize = function() {
-        this.offsetX = flip(minOffset, maxOffset);
-        this.offsetY = flip(minOffset, maxOffset);
+        angle = random(0, 2*Math.PI);
+        distance = random(minOffset, maxOffset);
+        this.offsetX = Math.sin(angle) * distance;
+        this.offsetY = Math.cos(angle) * distance;
         this.linearSpeed = random(minLinearSpeed, maxLinearSpeed);
         this.dT = 1 / random(minAngularSpeed, maxAngularSpeed);
     };
