@@ -1,225 +1,270 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Bee Test</title>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
-</head>
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+    <!--<meta charset="UTF-8">-->
+    <!--<title>Bee Test</title>-->
+    <!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>-->
+<!--</head>-->
 
-<body style="text-align: center">
+<!--<body style="text-align: center">-->
 
-<canvas id="garden" width="1500" height="900"
-        style="background-image: url(garden.jpg); border: 1px solid black; cursor: none; margin: auto;"></canvas>
+<!--<canvas id="garden" width="1500" height="900"-->
+        <!--style="background-image: url(garden.jpg); border: 1px solid black; cursor: none; margin: auto;"></canvas>-->
 
-<img id="flower" src="flower.png" width="100" height="99" style="display: none;"/>
+<!--<img id="flower" src="flower.png" width="100" height="99" style="display: none;"/>-->
 
-<img id="bee-left" src="bee-small-left.png" width="50" height="41" style="display: none;"/>
-<img id="bee-right" src="bee-small-right.png" width="50" height="41" style="display: none;"/>
+<!--<img id="bee-left" src="bee-small-left.png" width="50" height="41" style="display: none;"/>-->
+<!--<img id="bee-right" src="bee-small-right.png" width="50" height="41" style="display: none;"/>-->
 
-<script>
+<!--<script>-->
 
-    var mouse = {};
+    <!--var mouse = {};-->
 
-    var bees = [];
+    <!--var bees = [];-->
 
-    var waggleRadius = 150;
-    var waggleSpeed = 20;
-    var waggleAngle = 0;
-    var dW = 0.03;
+    <!--var threshold = 5;-->
+    <!--var minOffset = 30;-->
+    <!--var maxOffset = 110;-->
+    <!--var minLinearSpeed = 40;-->
+    <!--var maxLinearSpeed = 200;-->
+    <!--var minAngularSpeed = 15;-->
+    <!--var maxAngularSpeed = 80;-->
 
-    var threshold = 5;
-    var minOffset = 30;
-    var maxOffset = 110;
-    var minLinearSpeed = 40;
-    var maxLinearSpeed = 200;
-    var minAngularSpeed = 15;
-    var maxAngularSpeed = 80;
+    <!--var waggleDance = false;-->
+    <!--var flowerOn = false;-->
 
-    var waggleDance = false;
-    var flowerOn = false;
+    <!--$(function () {-->
+        <!--bees[0] = new Bee(215, 795);-->
+        <!--bees[1] = new Bee(430, 810);-->
+        <!--bees[2] = new Bee(700, 830);-->
+        <!--bees[3] = new Bee(1040, 780);-->
+        <!--bees[4] = new Bee(1240, 820);-->
+        <!--setInterval(function () {-->
+            <!--updateBees();-->
+            <!--refresh();-->
+        <!--}, 10);-->
+    <!--});-->
 
-    $(function () {
-        bees[0] = new Bee(215, 795);
-        bees[1] = new Bee(430, 810);
-        bees[2] = new Bee(700, 830);
-        bees[3] = new Bee(1040, 780);
-        bees[4] = new Bee(1240, 820);
-        setInterval(function () {
-            updateBees();
-            refresh();
-        }, 10);
-    });
+    <!--function addBee() {-->
+        <!--if ( bees.length <= maxBees ) {-->
+            <!--bees.push(new Bee(Math.random() > 0.5 ? -100 : 1600, 0));-->
+            <!--updateBees();-->
+        <!--}-->
+    <!--}-->
 
-    function addBee() {
-        bees.push(new Bee(Math.random() > 0.5 ? -100 : 1600, 0));
-        updateBees();
-    }
+    <!--$("#garden").mousemove(function (event) {-->
+        <!--storeMouse(event);-->
+        <!--flowerOn = true;-->
+        <!--buzzBees();-->
+    <!--}).mouseout(function () {-->
+        <!--flowerOn = false;-->
+        <!--waggleDance = false;-->
+        <!--randomizeBees();-->
+        <!--restBees();-->
+    <!--}).mousedown(function () {-->
+        <!--beginWaggleDance();-->
+    <!--}).mouseup(function () {-->
+        <!--waggleDance = false;-->
+        <!--randomizeBees();-->
+        <!--buzzBees();-->
+    <!--});-->
 
-    $("#garden").mousemove(function (event) {
-        storeMouse(event);
-        flowerOn = true;
-        buzzBees();
-    }).mouseout(function () {
-        flowerOn = false;
-        waggleDance = false;
-        randomizeBees();
-        restBees();
-    }).mousedown(function () {
-        beginWaggleDance();
-    }).mouseup(function () {
-        waggleDance = false;
-        randomizeBees();
-        buzzBees();
-    });
+    <!--function storeMouse(event) {-->
+        <!--var offset = $("#garden").offset();-->
+        <!--mouse.x = event.pageX - offset.left;-->
+        <!--mouse.y = event.pageY - offset.top;-->
+    <!--}-->
 
-    function storeMouse(event) {
-        var offset = $("#garden").offset();
-        mouse.x = event.pageX - offset.left;
-        mouse.y = event.pageY - offset.top;
-    }
+    <!--var waggleDanceStartedAt = 0;-->
 
-    var waggleDanceStartedAt = 0;
+    <!--function beginWaggleDance() {-->
+        <!--waggleDance = true;-->
+        <!--waggleDanceStartedAt = new Date().getTime();-->
+        <!--dW = -dW;-->
+        <!--pulseRadius = ( bees.length > 5 && Math.random() > 0.5);-->
+        <!--alternatePulseRadius = Math.random() > 0.5;-->
+        <!--counterRotate = ( bees.length % 2 == 0 && Math.random() > 0.5);-->
 
-    function beginWaggleDance() {
-        waggleDance = true;
-        waggleDanceStartedAt = new Date().getTime();
-        dW = -dW;
-        buzzBees();
-    }
+        <!--waggleRadius = minWaggleRadius + ((maxWaggleRadius - minWaggleRadius)/3);-->
+        <!--buzzBees();-->
+    <!--}-->
 
-    function refresh() {
-        var c = document.getElementById("garden");
-        var ctx = c.getContext("2d");
-        ctx.clearRect(0, 0, 1500, 900);
+    <!--var counterRotate = false;-->
 
-        if (flowerOn) {
-            ctx.drawImage(document.getElementById("flower"), mouse.x - 50, mouse.y - 50);
-        }
+    <!--var pulseRadius = false;-->
+    <!--var alternatePulseRadius = false;-->
 
-        for (var i = 0; i < bees.length; i++) {
-            var img = bees[i].targetX > bees[i].x ? "bee-right" : "bee-left";
-            ctx.drawImage(document.getElementById(img), bees[i].x - 25, bees[i].y - 20);
-        }
+    <!--function refresh() {-->
+        <!--var c = document.getElementById("garden");-->
+        <!--var ctx = c.getContext("2d");-->
+        <!--ctx.clearRect(0, 0, 1500, 900);-->
 
-        if (waggleDance) {
-            if ( new Date().getTime() - waggleDanceStartedAt > swarmDelay ) {
-                if ( bees.length < swarmThreshold ) {
-                    waggleDanceStartedAt = new Date().getTime();
-                }
-                addBee();
-            }
-            waggleAngle += dW;
-            if (waggleAngle > (2 * Math.PI)) {
-                waggleAngle = 0;
-            } else if ( waggleAngle < 0 ) {
-                waggleAngle = 2 * Math.PI;
-            }
-            buzzBees();
-        }
-    }
+        <!--if (flowerOn) {-->
+            <!--ctx.drawImage(document.getElementById("flower"), mouse.x - 50, mouse.y - 50);-->
+        <!--}-->
 
-    var swarmDelay = 5000;
-    var swarmThreshold = 12;
+        <!--for (var i = 0; i < bees.length; i++) {-->
+            <!--var img = bees[i].targetX > bees[i].x ? "bee-right" : "bee-left";-->
+            <!--ctx.drawImage(document.getElementById(img), bees[i].x - 25, bees[i].y - 20);-->
+        <!--}-->
 
-    function buzzBees() {
-        for (var i = 0; i < bees.length; i++) {
-            if (waggleDance) {
-                var angle = (((2 * Math.PI) / bees.length) * i) + waggleAngle;
-                var x = (mouse.x) + (Math.sin(angle) * waggleRadius);
-                var y = (mouse.y) + (Math.cos(angle) * waggleRadius);
-                bees[i].buzzTo(x, y, false);
-            } else {
-                bees[i].buzzTo(mouse.x, mouse.y, true);
-            }
-        }
-    }
+        <!--if (waggleDance) {-->
+            <!--if (new Date().getTime() - waggleDanceStartedAt > swarmDelay) {-->
+                <!--if (bees.length < swarmThreshold) {-->
+                    <!--waggleDanceStartedAt = new Date().getTime();-->
+                <!--}-->
+                <!--addBee();-->
+            <!--}-->
+            <!--updateWaggleAngle();-->
+            <!--updateWaggleRadius();-->
+            <!--buzzBees();-->
+        <!--}-->
+    <!--}-->
 
-    function restBees() {
-        for (var i = 0; i < bees.length; i++) {
-            bees[i].rest();
-        }
-    }
+    <!--function updateWaggleAngle() {-->
+        <!--waggleAngle += dW;-->
+        <!--if (waggleAngle > (2 * Math.PI)) {-->
+            <!--waggleAngle = 0;-->
+        <!--} else if (waggleAngle < 0) {-->
+            <!--waggleAngle = 2 * Math.PI;-->
+        <!--}-->
+    <!--}-->
 
-    function updateBees() {
-        for (var i = 0; i < bees.length; i++) {
-            bees[i].updatePosition();
-        }
-    }
+    <!--var danceRadiusT = 0;-->
+    <!--var danceRadiusDT = 0.07;-->
+    <!--var maxWaggleRadius = 300;-->
+    <!--var minWaggleRadius = 100;-->
+    <!--var waggleRadius = 150;-->
+    <!--var waggleSpeed = 20;-->
+    <!--var waggleAngle = 0;-->
+    <!--var dW = 0.03;-->
 
-    function randomizeBees() {
-        for (var i = 0; i < bees.length; i++) {
-            bees[i].randomize();
-        }
-    }
-
-    function Bee(x, y) {
-        this.x = this.currentX = this.restX = this.targetX = x;
-        this.y = this.currentY = this.restY = this.targetY = y;
-        this.dX = this.dY = this.radius = this.theta = 0;
-        this.randomize();
-    }
-
-    Bee.prototype.randomize = function() {
-        angle = random(0, 2*Math.PI);
-        distance = random(minOffset, maxOffset);
-        this.offsetX = Math.sin(angle) * distance;
-        this.offsetY = Math.cos(angle) * distance;
-        this.linearSpeed = random(minLinearSpeed, maxLinearSpeed);
-        this.dT = 1 / random(minAngularSpeed, maxAngularSpeed);
-    };
-
-    Bee.prototype.buzzTo = function (x, y, offset) {
-        this.targetX = x + ( offset ? this.offsetX : 0 );
-        this.targetY = y + ( offset ? this.offsetY : 0 );
-        this.updateDelta();
-    };
-
-    Bee.prototype.rest = function () {
-        this.targetX = this.restX;
-        this.targetY = this.restY;
-        this.updateDelta();
-    };
-
-    Bee.prototype.updateDelta = function () {
-        var speed = waggleDance ? waggleSpeed : this.linearSpeed;
-        this.dX = (this.targetX - this.currentX) / speed;
-        this.dY = (this.targetY - this.currentY) / speed;
-    };
-
-    Bee.prototype.updatePosition = function () {
-        if (Math.abs(this.targetX - this.currentX) > threshold) {
-            this.currentX += this.dX;
-        } else if (this.targetX == this.restX) {
-            this.currentX = this.targetX;
-        }
-        if (Math.abs(this.targetY - this.currentY) > threshold) {
-            this.currentY += this.dY;
-        } else if (this.targetY == this.restY) {
-            this.currentY = this.targetY;
-        }
-        this.x = this.currentX + ( waggleDance ? 0 : Math.sin(this.theta) * this.radius );
-        this.y = this.currentY + ( waggleDance ? 0 : Math.cos(this.theta) * this.radius );
-        if (!waggleDance) {
-            this.radius = (Math.abs(this.currentX - this.restX) + Math.abs(this.currentY - this.restY)) / 40;
-            if (this.radius > 3) {
-                this.theta += this.dT;
-                if (this.theta > 2 * Math.PI) {
-                    this.theta = 0;
-                }
-            }
-        }
-    };
-
-    function flip(min, max) {
-        return random(min, max) * (Math.random() >= 0.5 ? -1 : 1);
-    }
-
-    function random(min, max) {
-        return Math.floor(Math.random()*(max-min+1)+min);
-    }
-
-</script>
+    <!--var maxBees = 100;-->
 
 
-</body>
-</html>
+    <!--var CIRCLE = (2 * Math.PI);-->
+
+    <!--function updateWaggleRadius() {-->
+        <!--if (pulseRadius) {-->
+            <!--danceRadiusT += danceRadiusDT;-->
+            <!--if (danceRadiusT > CIRCLE) {-->
+                <!--danceRadiusT = 0;-->
+            <!--}-->
+            <!--waggleRadius = (minWaggleRadius + ((maxWaggleRadius - minWaggleRadius) / 2) ) + (Math.sin(danceRadiusT) * ((maxWaggleRadius - minWaggleRadius) / 2));-->
+        <!--}-->
+    <!--}-->
+
+    <!--var swarmDelay = 4000;-->
+    <!--var swarmThreshold = 12;-->
+
+    <!--function buzzBees() {-->
+        <!--for (var i = 0; i < bees.length; i++) {-->
+            <!--if (waggleDance) {-->
+                <!--if ( counterRotate ) {-->
+                    <!--var angle1 = (((4 * Math.PI) / bees.length) * i) + waggleAngle;-->
+
+                <!--} else {-->
+                    <!--var angle = (((2 * Math.PI) / bees.length) * i) + waggleAngle;-->
+                    <!--var radius = waggleRadius;-->
+                    <!--if ( pulseRadius && alternatePulseRadius && i%2==0 ) {-->
+                        <!--radius = minWaggleRadius + ( maxWaggleRadius - waggleRadius );-->
+                    <!--}-->
+                    <!--var x = (mouse.x) + (Math.sin(angle) * radius);-->
+                    <!--var y = (mouse.y) + (Math.cos(angle) * radius);-->
+                    <!--bees[i].buzzTo(x, y, false);-->
+                <!--}-->
+            <!--} else {-->
+                <!--bees[i].buzzTo(mouse.x, mouse.y, true);-->
+            <!--}-->
+        <!--}-->
+    <!--}-->
+
+    <!--function restBees() {-->
+        <!--for (var i = 0; i < bees.length; i++) {-->
+            <!--bees[i].rest();-->
+        <!--}-->
+    <!--}-->
+
+    <!--function updateBees() {-->
+        <!--for (var i = 0; i < bees.length; i++) {-->
+            <!--bees[i].updatePosition();-->
+        <!--}-->
+    <!--}-->
+
+    <!--function randomizeBees() {-->
+        <!--for (var i = 0; i < bees.length; i++) {-->
+            <!--bees[i].randomize();-->
+        <!--}-->
+    <!--}-->
+
+    <!--function Bee(x, y) {-->
+        <!--this.x = this.currentX = this.restX = this.targetX = x;-->
+        <!--this.y = this.currentY = this.restY = this.targetY = y;-->
+        <!--this.dX = this.dY = this.radius = this.theta = 0;-->
+        <!--this.randomize();-->
+    <!--}-->
+
+    <!--Bee.prototype.randomize = function () {-->
+        <!--angle = random(0, 2 * Math.PI);-->
+        <!--distance = random(minOffset, maxOffset);-->
+        <!--this.offsetX = Math.sin(angle) * distance;-->
+        <!--this.offsetY = Math.cos(angle) * distance;-->
+        <!--this.linearSpeed = random(minLinearSpeed, maxLinearSpeed);-->
+        <!--this.dT = 1 / random(minAngularSpeed, maxAngularSpeed);-->
+    <!--};-->
+
+    <!--Bee.prototype.buzzTo = function (x, y, offset) {-->
+        <!--this.targetX = x + ( offset ? this.offsetX : 0 );-->
+        <!--this.targetY = y + ( offset ? this.offsetY : 0 );-->
+        <!--this.updateDelta();-->
+    <!--};-->
+
+    <!--Bee.prototype.rest = function () {-->
+        <!--this.targetX = this.restX;-->
+        <!--this.targetY = this.restY;-->
+        <!--this.updateDelta();-->
+    <!--};-->
+
+    <!--Bee.prototype.updateDelta = function () {-->
+        <!--var speed = waggleDance ? waggleSpeed : this.linearSpeed;-->
+        <!--this.dX = (this.targetX - this.currentX) / speed;-->
+        <!--this.dY = (this.targetY - this.currentY) / speed;-->
+    <!--};-->
+
+    <!--Bee.prototype.updatePosition = function () {-->
+        <!--if (Math.abs(this.targetX - this.currentX) > threshold) {-->
+            <!--this.currentX += this.dX;-->
+        <!--} else if (this.targetX == this.restX) {-->
+            <!--this.currentX = this.targetX;-->
+        <!--}-->
+        <!--if (Math.abs(this.targetY - this.currentY) > threshold) {-->
+            <!--this.currentY += this.dY;-->
+        <!--} else if (this.targetY == this.restY) {-->
+            <!--this.currentY = this.targetY;-->
+        <!--}-->
+        <!--this.x = this.currentX + ( waggleDance ? 0 : Math.sin(this.theta) * this.radius );-->
+        <!--this.y = this.currentY + ( waggleDance ? 0 : Math.cos(this.theta) * this.radius );-->
+        <!--if (!waggleDance) {-->
+            <!--this.radius = (Math.abs(this.currentX - this.restX) + Math.abs(this.currentY - this.restY)) / 40;-->
+            <!--if (this.radius > 3) {-->
+                <!--this.theta += this.dT;-->
+                <!--if (this.theta > 2 * Math.PI) {-->
+                    <!--this.theta = 0;-->
+                <!--}-->
+            <!--}-->
+        <!--}-->
+    <!--};-->
+
+    <!--function flip(min, max) {-->
+        <!--return random(min, max) * (Math.random() >= 0.5 ? -1 : 1);-->
+    <!--}-->
+
+    <!--function random(min, max) {-->
+        <!--return Math.floor(Math.random() * (max - min + 1) + min);-->
+    <!--}-->
+
+<!--</script>-->
+
+
+<!--</body>-->
+<!--</html>-->
