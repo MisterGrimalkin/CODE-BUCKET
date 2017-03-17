@@ -29,9 +29,8 @@
     #survey-question-id-8943 {
         display: none;
     }
-
-
 </style>
+
 <script>
 
     var CIRCLE = (2 * Math.PI);
@@ -55,8 +54,8 @@
     var flowerOn = false;
 
     var gardenLeft = 0;
-    var gardenWidth = 0;
-    var gardenHeight = 0;
+    var gardenWidth = 1000;
+    var gardenHeight = 1000;
 
     var counterRotate = false;
     var pulseRadius = false;
@@ -112,7 +111,7 @@
                 waggleDance = false;
                 randomScatter = true;
                 randomizeBees();
-                scatterBees();
+                scatterBees(1.0);
             }).mousedown(function () {
                 beginWaggleDance();
             }).mouseup(function () {
@@ -132,14 +131,13 @@
                     onResize();
                 }
                 if ( randomScatter ) {
-                    scatterBees();
+                    scatterBees(0.2);
                 } else {
                     randomizeBees();
                 }
             }, 3000);
 
-            scatterBees();
-
+            scatterBees(1.0);
 
         }
 
@@ -211,9 +209,9 @@
         waggleDance = true;
         waggleDanceStartedAt = new Date().getTime();
         dW = -dW;
-        pulseRadius = Math.random() > 0.5;
-        alternatePulseRadius = Math.random() > 0.5;
-        counterRotate = Math.random() > 0.5;
+        pulseRadius = Math.random() < 0.5;
+        alternatePulseRadius = Math.random() < 0.5;
+        counterRotate = Math.random() < 0.5;
         waggleRadius = minWaggleRadius + ((maxWaggleRadius - minWaggleRadius) / 3);
         buzzBees();
     }
@@ -243,6 +241,9 @@
                 var angle = (((2 * Math.PI) / bees.length) * i) + waggleAngle;
                 var radius = waggleRadius;
                 if (pulseRadius && alternatePulseRadius && i % 2 == 0) {
+                    if ( counterRotate ) {
+                        angle = CIRCLE - angle;
+                    }
                     radius = minWaggleRadius + ( maxWaggleRadius - waggleRadius );
                 }
                 var x = (mouse.x) + (Math.sin(angle) * radius);
@@ -254,9 +255,11 @@
         }
     }
 
-    function scatterBees() {
+    function scatterBees(factor) {
         for (var i = 0; i < bees.length; i++) {
-            bees[i].scatter();
+            if ( Math.random() < factor ) {
+                bees[i].scatter();
+            }
         }
     }
 
