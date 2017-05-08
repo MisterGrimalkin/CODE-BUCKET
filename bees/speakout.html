@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Bees</title>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
-</head>
-
-<body style="text-align: center">
-
 <canvas id="garden" width="1500" height="900"
         style="position: absolute; left:0; top: 0; z-index: 1; cursor: pointer; margin: auto;"></canvas>
 
@@ -18,6 +8,28 @@
      height="41" style="display: none;"/>
 <img id="bee-right" src="https://files.38degrees.org.uk/items/files/000/000/057/original/bee-small-right.png" width="50"
      height="41" style="display: none;"/>
+
+<style>
+    .container-fluid {
+        padding: 0;
+    }
+
+    #survey_taker_postcode {
+        display: none;
+    }
+
+    .question {
+        z-index: 9;
+    }
+
+    #survey-question-id-8942 {
+        display: none;
+    }
+
+    #survey-question-id-8943 {
+        display: none;
+    }
+</style>
 
 <script>
 
@@ -61,9 +73,23 @@
 
     var pageLoadedAt = 0;
 
+    function isMobile() {
+        try{ document.createEvent("TouchEvent"); return true; }
+        catch(e){ return false; }
+    }
+
     $(function () {
 
         pageLoadedAt = new Date().getTime();
+
+        $("input[name=q\\[8940\\]]").change(function () {
+            $("#survey_taker_postcode").val($("input[name=q\\[8940\\]]").val());
+        });
+        $("#survey-question-id-8924").addClass("form-group-title").css("width", "calc( 100% - 20px )").css("margin", "10px");
+
+        $("a[onclick=return\\ test_submit\\(\\)]").mousedown(function() {
+            $("input[name=q\\[8943\\]]").val(new Date().getTime() - pageLoadedAt);
+        });
 
         onResize();
 
@@ -101,7 +127,9 @@
                 refresh();
             }, 10);
             setInterval(function() {
-                onResize();
+                if ( gardenHeight != $("a[onclick=return\\ test_submit\\(\\)]").offset().top ) {
+                    onResize();
+                }
                 if ( randomScatter ) {
                     scatterBees(0.2);
                 } else {
@@ -113,19 +141,32 @@
 
         }
 
+        $("input[name=q\\[8942\\]]").val(bees.length);
+
+        if ( QueryString.postcode ) {
+            $("#survey_taker_postcode").val(QueryString.postcode);
+            $("input[name=q\\[8940\\]]").val(QueryString.postcode);
+        }
+        if ( QueryString.name ) {
+            $("#survey_taker_name").val(QueryString.name);
+        }
+        if ( QueryString.email ) {
+            $("#survey_taker_email").val(QueryString.email);
+        }
     });
 
     function addBee() {
         if (bees.length < maxBees) {
             bees.push(new Bee(Math.random() > 0.5 ? -100 : 1600, 0));
             updateBees();
+            $("input[name=q\\[8942\\]]").val(bees.length);
         }
     }
 
     function onResize() {
         gardenLeft = 0;
         gardenWidth = window.innerWidth;
-        gardenHeight = document.height;
+        gardenHeight = $("a[onclick=return\\ test_submit\\(\\)]").offset().top;
         $("#garden").css("left", gardenLeft + "px");
         $("#garden").get(0).width = gardenWidth;
         $("#garden").get(0).height = gardenHeight;
@@ -330,12 +371,4 @@
         return query_string;
     }();
 
-    function isMobile() {
-        try{ document.createEvent("TouchEvent"); return true; }
-        catch(e){ return false; }
-    }
-
 </script>
-
-</body>
-</html>
