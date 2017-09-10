@@ -8,8 +8,8 @@ if folder_path
 		if ['.jpg', '.jpeg', '.png'].include? ext
 		    filename = File.basename(f, File.extname(f))
 		    new_filename = folder_path + '/' + i.to_s.rjust(digits, '0') + ext
-		    # File.rename(f, new_filename)
-		    puts filename
+		    File.rename(f, new_filename)
+		    # puts filename +","+new_filename
 		    i += 1
 		end
 
