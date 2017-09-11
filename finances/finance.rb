@@ -2,39 +2,29 @@ require_relative 'account'
 require_relative 'statement'
 require_relative 'printer'
 
-path = "#{ENV['HOME']}/data/Finances/Statements"
-
+# Load data
 current_account = Account.new("#{ENV['HOME']}/data/Finances/Statements")
 
-# month august [2015]
-# from 2017-01-01
-# to 2017-08-01
-# category ABC
-# description DEF
-
+# Process parameters
+search = {}
+report_mode = false
 ignore = 0
-from_date = nil
-to_date = nil
-search_category = nil
-search_description = nil
-mode = nil
-min_value = nil
-max_value = nil
-report = false
 
 if ARGV.size == 0
+
+  # Print balance
   last_transaction =
       current_account
           .statements
           .sort_by { |date, statement| date }
           .last[1]
           .all_transactions
-          .reverse
-          .last
-  puts "Balance as of #{last_transaction[:date].strftime('%d %B %Y')}: #{last_transaction[:balance]}"
+          .first
+  puts "Balance #{last_transaction[:date].strftime('%d %B %Y')}: #{last_transaction[:balance]}"
 
-elsif ARGV[0]=='export-names'
+elsif ARGV[0]=='export'
 
+  # Export all categories
   current_account.totals_by_description(:credit).sort_by { |k, v| v[:category] }.each do |k, v|
     puts "#{k},#{v[:category]}"
   end
@@ -43,131 +33,136 @@ elsif ARGV[0]=='export-names'
   end
 
 else
+
+  # Process arguments
   ARGV.each_with_index do |arg, i|
+
     if ignore == 0
       case arg.downcase
+
         when 'report'
-          report = true
-          from_date = Date.civil(Date.today.year, 1, 1)
-          to_date = Date.civil(Date.today.year, 12, 31)
+          report_mode = true
+          search[:from] = Date.civil(Date.today.year, 1, 1)
+          search[:to] = Date.civil(Date.today.year, 12, 31)
           if i+1 < ARGV.size
-            from_date = Date.parse("#{ARGV[i+1]}-01-01")
-            to_date = Date.parse("#{ARGV[i+1]}-12-31")
-            search_category = nil
-            search_description = nil
-            mode = nil
-            min_value = nil
-            max_value = nil
-            ignore = ARGV.size
+            search[:from] = ARGV[i+1]!='-' ? Date.parse("#{ARGV[i+1]}-01-01") : search[:from]
+            ignore = 1
             if i+2 < ARGV.size
-              to_date = Date.parse("31-12-#{ARGV[i+2]}")
+              search[:to] = ARGV[i+2]!='-' ? Date.parse("#{ARGV[i+2]}-12-31") : search[:to]
+              ignore = 2
+            else
+              search[:to] = Date.civil(date[:from].year, 12, 31)
             end
           end
-          # puts "Monthly Breakdown: #{from_date.year} #{from_date.year == to_date.year ? '' : "- #{to_date.year}"}"
+
         when 'month'
-          unless from_date || to_date
+          unless search[:from] || search[:to]
             month = Date.today.month
             year = Date.today.year
             if i+1 < ARGV.size
-              month = ARGV[i+1]
+              month = ARGV[i+1]!='-' ? ARGV[i+1] : month
               ignore = 1
               if i+2 < ARGV.size
-                year = ARGV[i+2]
+                year = ARGV[i+2]!='-' ? ARGV[i+2] : year
                 ignore = 2
               end
             end
-            from_date = Date.parse("01 #{month} #{year}")
-            to_date = Date.civil(from_date.year, from_date.month, -1)
-            puts "Month: #{from_date.strftime('%B')} #{from_date.strftime('%Y')} (#{from_date} to #{to_date})"
+            search[:from] = Date.parse("#{year}-#{month}-01")
+            search[:to] = Date.civil(search[:from].year, search[:from].month, -1)
           end
-        when 'from'
-          unless from_date || i+1 > ARGV.size
-            from_date = Date.parse(ARGV[i+1])
+
+        when 'from', 'after', 'since'
+          unless search[:from] || i+1 > ARGV.size
+            search[:from] = Date.parse(ARGV[i+1])
             ignore = 1
-            puts "From: #{from_date.strftime('%d %B %Y')}"
           end
-        when 'to'
-          unless to_date || i+1 > ARGV.size
-            to_date = Date.parse(ARGV[i+1])
+
+        when 'to', 'before', 'until'
+          unless search[:to] || i+1 > ARGV.size
+            search[:to] = Date.parse(ARGV[i+1])
             ignore = 1
-            puts "  To: #{to_date.strftime('%d %B %Y')}"
           end
+
         when 'category', 'cat'
-          unless search_category || i+1 > ARGV.size
-            search_category = ARGV[i+1]
+          unless search[:category] || i+1 > ARGV.size
+            search[:category] = ARGV[i+1]
             ignore = 1
-            puts "Category: '#{search_category}'"
           end
+
         when 'description', 'desc'
-          unless search_description || i+1 > ARGV.size
-            search_description = ARGV[i+1]
+          unless search[:description] || i+1 > ARGV.size
+            search[:description] = ARGV[i+1]
             ignore = 1
-            puts "Description: '#{search_description}'"
           end
+
+        when 'exact'
+          search[:exact] = true
+
+        when 'case'
+          search[:case] = true
+
         when 'credit', 'income', 'in'
-          unless mode
-            mode = :credit
-            puts "Only incoming transactions"
+          unless search[:mode]
+            search[:mode] = :credit
           end
+
         when 'debit', 'outgoing', 'out'
-          unless mode
-            mode = :debit
-            puts "Only outgoing transactions"
+          unless search[:mode]
+            search[:mode] = :debit
           end
+
         when 'above', 'over', 'min'
-          unless min_value || i+1 > ARGV.size
-            min_value = ARGV[i+1].to_f
+          unless search[:min] || i+1 > ARGV.size
+            search[:min] = ARGV[i+1].to_f
             ignore = 1
-            puts "Min: #{sprintf('%.2f', min_value)}"
           end
+
         when 'below', 'under', 'max'
-          unless max_value || i+1 > ARGV.size
-            max_value = ARGV[i+1].to_f
+          unless search[:max] || i+1 > ARGV.size
+            search[:max] = ARGV[i+1].to_f
             ignore = 1
-            puts "Max: #{sprintf('%.2f', max_value)}"
           end
+
         else
-          puts "Unknown option '#{arg.downcase}'"
-          exit
+          abort "Unknown option '#{arg}'"
       end
     else
       ignore -= 1
     end
   end
 
-  if from_date && to_date && to_date < from_date
-    puts "Invalid date range"
-    exit
+  if search[:from] && search[:to] && search[:to] < search[:from]
+    abort "Invalid date range"
   end
 
+  # Do search
+  if report_mode
 
-  transactions = current_account.search_transactions(from_date, to_date, search_category, search_description, mode, min_value, max_value)
-  if report
-    breakdown, categories = current_account.monthly_breakdown(transactions)
+    breakdown, categories = current_account.monthly_breakdown(search)
     debit_cats = categories[:debit].sort
+
     puts "Date,Balance,IN,OUT,#{debit_cats.join(',')}"
     breakdown.sort_by { |k, v| k }.each do |date, v|
-      line = "#{date},#{sprintf('%.2f', v[:last_balance])},#{sprintf('%.2f', v[:total_credit])},#{sprintf('%.2f', v[:total_debit])}"
+      line = "#{date},#{curr(v[:last_balance])},#{curr(v[:total_credit])},#{curr(v[:total_debit])}"
       debit_cats.each do |cat|
-        line << ",#{v[:debit][cat] ? sprintf('%.2f', v[:debit][cat]):0}"
+        line << ",#{curr(v[:debit][cat])}"
       end
       puts line
     end
 
   else
-    puts BAR_1
-    sum_totals = current_account.sum_totals transactions
-    category_totals = current_account.category_totals transactions
-    print_transactions transactions, sum_totals, category_totals
-    puts BAR_1
-  end
 
+    transactions = current_account.search_transactions(search)
+
+    puts BAR_1
+    print_transactions(transactions, sum_totals(transactions), category_totals(transactions))
+    puts BAR_1
+
+  end
 
 end
 
-
-exit
-
+=begin
 show_detail = ARGV.include? "detail"
 
 if ARGV[0]=='totals'
@@ -224,3 +219,4 @@ else
   puts "   CASHFLOW   #{sprintf('%.2f', (credits-debits)/statements.size).rjust(9, " ")}"
 
 end
+=end

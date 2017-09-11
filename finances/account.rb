@@ -1,9 +1,11 @@
+require_relative 'utils'
+
 class Account
 
   def initialize(path)
     @statements = {}
     @categories = {}
-    cat_file = "#{ENV['HOME']}/data/Finances/Statements/config/categories.csv"
+    cat_file = "#{path}/config/categories.csv"
     if File.exist? cat_file
       CSV.parse(File.read(cat_file)) do |row|
         @categories[row[0]] = row[1]
@@ -47,78 +49,62 @@ class Account
     totals.sort_by { |k, v| v[0] }.reverse
   end
 
-  def sum_totals(transactions)
-    credit = 0.0
-    debit = 0.0
-    count = 0
-    transactions.each do |t|
-      credit += t[:credit]
-      debit += t[:debit]
-      count += 1
-    end
-    {credit: credit, debit: debit, count: count}
-  end
+  def monthly_breakdown(opts)
 
-  def category_totals(transactions)
-    totals = {}
-    transactions.each do |t|
-      unless totals[t[:category]]
-        totals[t[:category]] = {credit: 0.0, debit: 0.0}
-      end
-      totals[t[:category]][:credit] += t[:credit]
-      totals[t[:category]][:debit] += t[:debit]
-    end
-    totals.sort_by { |k, v| v[:debit] }.reverse
-  end
-
-  def monthly_breakdown(transactions)
-    totals = {}
+    transactions = search_transactions(opts)
+    result = {}
     all_categories = {credit: [], debit: []}
+
     transactions.each do |t|
+
       month = Date.civil(t[:date].year, t[:date].month, 1)
-      unless totals[month]
-        totals[month] = {credit: {}, debit: {}, total_credit: 0.0, total_debit: 0.0}
+
+      unless result[month]
+        result[month] = {credit: {}, debit: {}, total_credit: 0.0, total_debit: 0.0}
       end
 
-      if totals[month][:last_balance]
-        if totals[month][:last_balance_date] < t[:date]
-          totals[month][:last_balance] = t[:balance]
-          totals[month][:last_balance_date] = t[:date]
-        end
-      else
-        totals[month][:last_balance] = t[:balance]
-        totals[month][:last_balance_date] = t[:date]
+      unless result[month][:last_balance] && result[month][:last_balance_date] >= t[:date]
+        result[month][:last_balance] = t[:balance]
+        result[month][:last_balance_date] = t[:date]
       end
 
-      if t[:credit] > 0
-        type = :credit
-        totals_type = :total_credit
-      else
-        type = :debit
-        totals_type = :total_debit
-      end
+      type = t[:credit] > 0 ? :credit : :debit
+      totals_type = t[:credit] > 0 ? :total_credit : :total_debit
 
-      data = totals[month]
-      unless data[type][t[:category]]
-        data[type][t[:category]] = 0.0
+      data = result[month]
+      cat = t[:category]
+      unless data[type][cat]
+        data[type][cat] = 0.0
       end
-      unless all_categories[type].include? t[:category]
-        all_categories[type] << t[:category]
-      end
-      data[type][t[:category]] += t[type]
+      data[type][cat] += t[type]
       data[totals_type] += t[type]
+
+      unless all_categories[type].include? cat
+        all_categories[type] << cat
+      end
+
     end
-    return totals, all_categories
+
+    return result, all_categories
   end
 
-  def search_transactions(from, to, category, description, mode, min, max)
+  def search_transactions(opts)
+
+    from, to, category, description, mode, min, max, exact, match_case =
+        opts[:from], opts[:to],
+            opts[:category],
+            opts[:description],
+            opts[:mode], opts[:min], opts[:max], opts[:exact], opts[:case]
     transactions = []
+
     @statements.each do |date, statement|
       statement.all_transactions.each do |t|
         if (!from || t[:date] >= from) &&
             (!to || t[:date] <= to) &&
-            (!category || t[:category].downcase.include?(category.downcase)) &&
-            (!description || t[:description].downcase.include?(description.downcase)) &&
+            (!category || match_any?(t[:category],
+                                     category.split(','), exact, match_case)) &&
+            (!description || match_any?(t[:description],
+                                        description.split(','), exact, match_case)) &&
             (!mode ||
                 (mode==:credit && t[:credit] > 0) ||
                 (mode==:debit && t[:debit] > 0)
@@ -135,6 +121,7 @@ class Account
         end
       end
     end
+
     transactions.sort_by { |t| t[:date] }
   end
 

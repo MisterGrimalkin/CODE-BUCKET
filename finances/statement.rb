@@ -8,10 +8,10 @@ class Statement
     hash_csv(filename).each do |row|
       @transactions << {
           date: Date.parse(row["Transaction Date"]),
-          description: row["Transaction Description"],
+          description: row["Detail"] ? "#{row["Detail"]} (#{row["Transaction Description"]})" : row["Transaction Description"],
           credit: row["Credit Amount"].to_f,
           debit: row["Debit Amount"].to_f,
-          category: categories[row["Transaction Description"]] || "Misc.",
+          category: row["Category"] || categories[row["Transaction Description"]] || "Misc.",
           balance: row["Balance"].to_f
       }
     end
