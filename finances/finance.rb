@@ -40,6 +40,24 @@ else
     if ignore == 0
       case arg.downcase
 
+        when 'help', '?'
+          puts BAR_1
+          puts "Options:"
+          puts "  report [Y1] [Y2] : yearly analysis CSV years Y1 to Y2, or current"
+          puts "  month [M] [Y]    : transactions in month M & year Y, or current"
+          puts "  from YYYY-MM-DD  : transactions on or after date"
+          puts "  to YYYY-MM-DD    : transactions on or before date"
+          puts "  min VALUE        : only transactions of at least VALUE"
+          puts "  max VALUE        : only transactions of at most VALUE"
+          puts "  credit           : only credit (income) transactions"
+          puts "  debit            : only debit (outgoing) transactions"
+          puts "  category CAT     : transactions with specified categories (comma-separated)"
+          puts "  description DSC  : transactions with specified descriptions (comma-separated)"
+          puts "  exact            : whole-word match on category and description"
+          puts "  case             : case-sensitive match on category and description"
+          puts BAR_1
+          exit
+
         when 'report'
           report_mode = true
           search[:from] = Date.civil(Date.today.year, 1, 1)
@@ -133,6 +151,10 @@ else
 
   if search[:from] && search[:to] && search[:to] < search[:from]
     abort "Invalid date range"
+  end
+
+  if search[:min] && search[:max] && search[:max] < search[:min]
+    abort "Invalid value range"
   end
 
   # Do search
