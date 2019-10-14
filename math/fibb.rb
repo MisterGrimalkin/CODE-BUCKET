@@ -1,0 +1,1 @@
+([1]*10).inject([1,1]) { |acc, value| acc << acc[-1]+acc[-2]}

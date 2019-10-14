@@ -1,5 +1,6 @@
 require_relative 'account'
 require_relative 'statement'
+require_relative 'report_column'
 require_relative 'printer'
 
 # Load data
@@ -8,6 +9,7 @@ current_account = Account.new("#{ENV['HOME']}/data/Finances/Statements")
 # Process parameters
 search = {}
 report_mode = false
+sheet_mode = false
 ignore = 0
 
 if ARGV.size == 0
@@ -55,6 +57,7 @@ else
           puts "  description DSC  : transactions with specified descriptions (comma-separated)"
           puts "  exact            : whole-word match on category and description"
           puts "  case             : case-sensitive match on category and description"
+          puts "  sheet            : spreadsheet output mode"
           puts BAR_1
           exit
 
@@ -141,6 +144,9 @@ else
             ignore = 1
           end
 
+        when 'sheet'
+          sheet_mode = true
+
         else
           abort "Unknown option '#{arg}'"
       end
@@ -158,7 +164,102 @@ else
   end
 
   # Do search
-  if report_mode
+  if sheet_mode
+
+    transactions, category_map = current_account.search_transactions(search, true)
+
+    from = search[:from] || transactions.first[:date]
+    to = search[:to] || transactions.last[:date]
+
+    summary = ',CATEGORY'
+    detail = 'CATEGORY,DESCRIPTION'
+    descriptions = {}
+    columns = []
+    (to - from).to_i.times do |i|
+      column = ReportColumn.new(from+i)
+      column.take_transactions transactions
+      summary << ",#{from+i}"
+      detail << ",#{from+i}"
+      columns << column
+    end
+    summary << "\n"
+    detail << "\n"
+
+    category_map.each do |cat, descs|
+      summary << ",#{cat}"
+      columns.each do |column|
+        summary << ",#{column.total(cat)}"
+      end
+      first = true
+      descs.each do |desc|
+        detail << "#{first ? cat : ''},#{desc}"
+        first = false
+        columns.each do |column|
+          detail << ",#{column.amount(cat, desc)}"
+        end
+        detail << "\n"
+      end
+      summary << "\n"
+    end
+
+    puts summary
+    puts detail
+
+
+
+    # # CAT => {DESC => {DATE => TOTAL_AMOUNT}}
+    # amounts = {}
+    #
+    # # CAT => {DATE => CAT_TOTAL}
+    # cat_amounts = {}
+    #
+    # transactions.each do |t|
+    #   descs = (amounts[t[:category]] = amounts[t[:category]] || {})
+    #   dates = (descs[t[:description]] = descs[t[:description]] || {})
+    #   total = (dates[t[:date].to_s] || 0.0)
+    #   dates[t[:date].to_s] = total + t[:credit] - t[:debit]
+    #   cat_total = cat_amounts[t[:category]] = cat_amounts[t[:category]] || {}
+    #
+    # end
+    # output = {}
+    # amounts.sort_by { |k, _| k }.each { |k, v| output[k]=v }
+    #
+    # from = search[:from] || transactions.first[:date]
+    # to = search[:to] || transactions.last[:date]
+    #
+    # header = ',,TOTAL'
+    # (to - from).to_i.times do |i|
+    #   header << ",#{(from+i).to_s}"
+    # end
+    #
+    # rows = []
+    # cat_totals = {}
+    # output.each do |cat, descs|
+    #   first_desc = true
+    #   cat_total = 0.0
+    #   descs.each do |desc, dates|
+    #     row = ''
+    #     total = 0.0
+    #     (to - from).to_i.times do |i|
+    #       amt = dates[(from+i).to_s] || 0.0
+    #       row << ",#{sprintf('%.2f', amt)}"
+    #       total += amt
+    #       cat_total += amt
+    #     end
+    #     rows << "#{first_desc ? cat : ''},#{desc},#{sprintf('%.2f', total)}#{row}"
+    #     first_desc = false
+    #   end
+    #   cat_totals[cat] = cat_total
+    # end
+    #
+    # cat_totals.sort_by{|k,v|v}.reverse.each do |cat, total|
+    #   puts "#{cat},#{sprintf('%.2f', total)}"
+    # end
+    # puts
+    # puts header
+    # puts rows
+
+  elsif report_mode
 
     breakdown, categories = current_account.monthly_breakdown(search)
     debit_cats = categories[:debit].sort

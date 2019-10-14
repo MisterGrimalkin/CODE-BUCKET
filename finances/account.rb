@@ -88,7 +88,9 @@ class Account
     return result, all_categories
   end
 
-  def search_transactions(opts)
+  def search_transactions(opts, get_categories = false)
+
+    category_map = {}
 
     from, to, category, description, mode, min, max, exact, match_case =
         opts[:from], opts[:to],
@@ -117,12 +119,23 @@ class Account
                 (t[:credit]==0 && t[:debit] <= max) ||
                 (t[:debit]==0 && t[:credit] <= max)
             )
+          if get_categories
+            category_map[t[:category]] ||= []
+            unless category_map[t[:category]].include? t[:description]
+              category_map[t[:category]] << t[:description]
+            end
+          end
           transactions << t
         end
       end
     end
 
-    transactions.sort_by { |t| t[:date] }
+    if get_categories
+      [transactions.sort_by { |t| t[:date] }, category_map.sort_by{ |c, _| c }]
+    else
+      transactions.sort_by { |t| t[:date] }
+    end
+
   end
 
 end
